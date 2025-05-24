@@ -1,3 +1,5 @@
+import { showAlert, showConfirm } from './customDialogs.js';
+
 export class MarkdownHandler {
     constructor(containerElement) {
         this.container = containerElement;
@@ -15,7 +17,7 @@ export class MarkdownHandler {
             this.createCards(paragraphs);
         } catch (error) {
             console.error('文件处理错误:', error);
-            alert('文件处理出错，请重试');
+            showAlert('文件处理出错，请重试');
         }
     }
 
@@ -94,33 +96,35 @@ export class MarkdownHandler {
         deleteBtn.innerHTML = '×';
         deleteBtn.onclick = (e) => {
             e.stopPropagation();
-            if (confirm('确定要删除这个卡片吗？')) {
-                // 删除指向该卡片的连接
-                const cardId = card.dataset.cardId;
-                if (window.connectionManager) {
-                    // 删除蓝色插座的连接（包括来自提示词卡片和其他文本卡片的连接）
-                    const textCardPort = card.querySelector('.text-card-port');
-                    if (textCardPort) {
-                        window.connectionManager.removePortConnection(textCardPort);
-                    }
-                    
-                    // 删除紫色插头的连接（该卡片发起的链式连接）
-                    const chainPort = card.querySelector('.text-card-chain-port');
-                    if (chainPort) {
-                        window.connectionManager.removePortConnection(chainPort);
-                    }
-                    
-                    // 删除指向该卡片的所有连接
-                    window.connectionManager.connections.forEach((connection, connectionId) => {
-                        if (connection.endPort.closest('.paragraph-card')?.dataset.cardId === cardId) {
-                            window.connectionManager.removePortConnection(connection.startPort);
+            showConfirm('确定要删除这个卡片吗？').then((confirmed) => {
+                if (confirmed) {
+                    // 删除指向该卡片的连接
+                    const cardId = card.dataset.cardId;
+                    if (window.connectionManager) {
+                        // 删除蓝色插座的连接（包括来自提示词卡片和其他文本卡片的连接）
+                        const textCardPort = card.querySelector('.text-card-port');
+                        if (textCardPort) {
+                            window.connectionManager.removePortConnection(textCardPort);
                         }
-                    });
+                        
+                        // 删除紫色插头的连接（该卡片发起的链式连接）
+                        const chainPort = card.querySelector('.text-card-chain-port');
+                        if (chainPort) {
+                            window.connectionManager.removePortConnection(chainPort);
+                        }
+                        
+                        // 删除指向该卡片的所有连接
+                        window.connectionManager.connections.forEach((connection, connectionId) => {
+                            if (connection.endPort.closest('.paragraph-card')?.dataset.cardId === cardId) {
+                                window.connectionManager.removePortConnection(connection.startPort);
+                            }
+                        });
+                    }
+                    
+                    card.remove();
+                    this.cards = this.cards.filter(c => c !== card);
                 }
-                
-                card.remove();
-                this.cards = this.cards.filter(c => c !== card);
-            }
+            });
         };
         actions.appendChild(deleteBtn);
         card.appendChild(actions);

@@ -1,3 +1,4 @@
+import { showAlert, showConfirm } from './js/customDialogs.js';
 import { PromptCardManager } from './js/promptCard.js';
 import { MarkdownHandler } from './js/markdownHandler.js';
 import { ConnectionManager } from './js/connectionManager.js';
@@ -55,7 +56,7 @@ window.addEventListener('scroll', () => connectionManager.updateConnections());
 // 拖拽开始时记录内容
 promptOutput.addEventListener('dragstart', (e) => {
     const content = promptOutput.textContent.trim();
-    if (content && content !== '等待提交提示词...' && content !== 'AI思考中...') {
+    if (content && content !== '等待第一次提交...' && content !== 'AI思考中...') {
         e.dataTransfer.setData('text/plain', content);
         // 添加拖拽效果
         promptOutput.style.opacity = '0.5';
@@ -263,18 +264,20 @@ document.getElementById('export-button').addEventListener('click', () => {
 
 // 添加删除所有段落的功能
 document.getElementById('clear-paragraphs').addEventListener('click', () => {
-    if (confirm('确定要删除所有段落卡片吗？此操作不可撤销。')) {
-        // 清空所有段落卡片
-        paragraphContainer.innerHTML = '';
-        
-        // 清除所有连接
-        if (window.connectionManager) {
-            window.connectionManager.clearAllConnections();
-        }
+    showConfirm('确定要删除所有段落卡片吗？此操作不可撤销。').then((confirmed) => {
+        if (confirmed) {
+            // 清空所有段落卡片
+            paragraphContainer.innerHTML = '';
+            
+            // 清除所有连接
+            if (window.connectionManager) {
+                window.connectionManager.clearAllConnections();
+            }
 
-        // 重置导入计数器
-        markdownHandler.importCount = 0;
-    }
+            // 重置导入计数器
+            markdownHandler.importCount = 0;
+        }
+    });
 });
 
 // 模拟API调用
@@ -319,10 +322,7 @@ function showCustomModelDialog() {
         const apiKey = dialog.querySelector('#api-key').value.trim();
         const model = dialog.querySelector('#model-name').value.trim();
 
-        if (!baseUrl || !apiKey || !model) {
-            alert('请填写所有必要信息');
-            return;
-        }
+        if (!baseUrl || !apiKey || !model) return showAlert('请填写所有必要信息');
 
         // 更新配置
         API_CONFIG.CUSTOM_MODEL = {
@@ -343,9 +343,9 @@ CUSTOM_MODEL: {
         
         console.log('新的自定义模型配置：');
         console.log(configText);
-        alert('配置已更新！请记得将新的配置保存到 config.js 文件中。\n\n配置信息已输出到控制台，你可以直接复制使用。');
-
-        dialog.remove();
+        showAlert('配置已更新！请记得将新的配置保存到 config.js 文件中。\n配置信息已输出到控制台，你可以直接复制使用。').then(() => {
+            dialog.remove();
+        });
     });
 
     // 取消按钮事件
@@ -461,10 +461,7 @@ async function showOllamaDialog() {
 
     // 确定按钮事件
     dialog.querySelector('.confirm-btn').addEventListener('click', () => {
-        if (!window.ollamaModel) {
-            alert('请选择一个模型');
-            return;
-        }
+        if (!window.ollamaModel) return showAlert('请选择一个模型');
         dialog.remove();
     });
 }

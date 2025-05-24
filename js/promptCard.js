@@ -1,3 +1,5 @@
+
+import { showAlert, showConfirm } from './customDialogs.js';
 // 生成唯一ID的辅助函数
 function generateUniqueId(prefix = 'card') {
     return `${prefix}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -108,18 +110,20 @@ export class PromptCard {
         const deleteBtn = card.querySelector('.delete-btn');
         deleteBtn.onclick = (e) => {
             e.stopPropagation();
-            if (confirm('确定要删除这个提示词卡片吗？')) {
-                // 删除所有连接端口的连接
-                const ports = card.querySelectorAll('.connection-port');
-                if (window.connectionManager) {
-                    ports.forEach(port => {
-                        window.connectionManager.removePortConnection(port);
-                    });
+            showConfirm('确定要删除这个提示词卡片吗？').then((confirmed) => {
+                if (confirmed) {
+                    // 删除所有连接端口的连接
+                    const ports = card.querySelectorAll('.connection-port');
+                    if (window.connectionManager) {
+                        ports.forEach(port => {
+                            window.connectionManager.removePortConnection(port);
+                        });
+                    }
+                    
+                    // 从卡片管理器中移除
+                    window.cardManager.deleteCard(this.id);
                 }
-                
-                // 从卡片管理器中移除
-                window.cardManager.deleteCard(this.id);
-            }
+            });
         };
 
         return card;
@@ -273,9 +277,9 @@ export class PromptCardManager {
             // 处理删除按钮点击
             if (e.target.matches('.delete-btn')) {
                 e.stopPropagation();
-                if (confirm('确定要删除这个提示词卡片吗？')) {
-                    this.deleteCard(promptCard.id);
-                }
+                showConfirm('确定要删除这个提示词卡片吗？').then((confirmed) => {
+                    if (confirmed) this.deleteCard(promptCard.id);
+                });
                 return;
             }
 
@@ -394,7 +398,7 @@ export class PromptCardManager {
                 }
                 dialog.remove();
             } else {
-                alert('标题和提示词内容不能为空');
+                showAlert('标题和提示词内容不能为空');
             }
         });
 
@@ -459,9 +463,9 @@ export function importCards() {
 
             // 显示成功提示
             const count = cardsData.length;
-            alert(`成功导入 ${count} 个卡片`);
+            showAlert(`成功导入 ${count} 个卡片`);
         } catch (error) {
-            alert('导入失败：' + error.message);
+            showAlert('导入失败：' + error.message);
         }
     };
     
@@ -480,23 +484,25 @@ export function initializeCardManagement() {
     
     // 添加清空功能
     clearButton.addEventListener('click', () => {
-        if (confirm('确定要删除所有提示词卡片吗？此操作不可撤销。')) {
-            const cardsContainer = document.querySelector('.prompt-cards');
+        showConfirm('确定要删除所有提示词卡片吗？此操作不可撤销。').then((confirmed) => {
+            if (confirmed) {
+                const cardsContainer = document.querySelector('.prompt-cards');
             
-            // 先删除所有提示词卡片的连接
-            cardsContainer.querySelectorAll('.prompt-card').forEach(card => {
-                const ports = card.querySelectorAll('.connection-port');
-                if (window.connectionManager) {
-                    ports.forEach(port => {
-                        window.connectionManager.removePortConnection(port);
-                    });
-                }
-            });
-            
-            // 然后清空容器和卡片管理器
-            cardsContainer.innerHTML = '';
-            window.cardManager.cards.clear();
-        }
+                // 先删除所有提示词卡片的连接
+                cardsContainer.querySelectorAll('.prompt-card').forEach(card => {
+                    const ports = card.querySelectorAll('.connection-port');
+                    if (window.connectionManager) {
+                        ports.forEach(port => {
+                            window.connectionManager.removePortConnection(port);
+                        });
+                    }
+                });
+                
+                // 然后清空容器和卡片管理器
+                cardsContainer.innerHTML = '';
+                window.cardManager.cards.clear();
+            }
+        });
     });
 
     // 添加清除连线功能
